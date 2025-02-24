@@ -1,0 +1,28 @@
+name: YourBot
+channels:
+  - pytorch
+  - nvidia
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch-cuda
+  - pip:
+      - torch
+      - torchvision
+      - torchaudio
+      - git+https://github.com/huggingface/transformers.git
+      - datasets
+      - accelerate
+      - peft
+      - bitsandbytes
+      - tqdm
+      - numpy
+      - pandas
+      - scipy
+      - huggingface-hub
+      - tokenizers
+      - safetensors
+      - pyarrow
+      - emoji
+      - spacy
