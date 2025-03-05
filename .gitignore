@@ -170,3 +170,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 *.jsonl
+tokenized_telegram_chat/*
