@@ -87,7 +87,8 @@ def main():
         spacy_model = config.get("filtered_dataset", "spacy_model")
         output_file = config.get("filtered_dataset", "json_file")
         question_words = {
-            word.strip() for word in config.get("filtered_dataset", "question_words").split(",")
+            word.strip()
+            for word in config.get("filtered_dataset", "question_words").split(",")
         }
     except Exception as e:
         logger.error("Error loading configuration: %s", e)
@@ -98,10 +99,8 @@ def main():
         nlp = spacy.load(spacy_model)
         logger.info("✅ Model '%s' loaded successfully.", spacy_model)
     except OSError:
-        logger.warning(
-            "🔹 Model '%s' not found. Installing...", spacy_model)
-        subprocess.run(
-            ["python", "-m", "spacy", "download", spacy_model], check=True)
+        logger.warning("🔹 Model '%s' not found. Installing...", spacy_model)
+        subprocess.run(["python", "-m", "spacy", "download", spacy_model], check=True)
         nlp = spacy.load(spacy_model)
 
     # Check if spaCy is using GPU for acceleration
@@ -147,25 +146,31 @@ def main():
                         and not contains_only_emojis(next_msg.get("text"))
                     ):
                         # If the current message is not from the target user and appears to be a question...
-                        if (
-                            current_msg.get("from") != user_target
-                            and is_question(current_msg.get("text"), nlp, question_words)
+                        if current_msg.get("from") != user_target and is_question(
+                            current_msg.get("text"), nlp, question_words
                         ):
                             # ... and the next message is from the target user, save the conversation.
                             if next_msg.get("from") == user_target:
                                 conversation_data = {
                                     "messages": [
-                                        {"role": "user",
-                                            "content": current_msg.get("text")},
-                                        {"role": "assistant",
-                                            "content": next_msg.get("text")},
+                                        {
+                                            "role": "user",
+                                            "content": current_msg.get("text"),
+                                        },
+                                        {
+                                            "role": "assistant",
+                                            "content": next_msg.get("text"),
+                                        },
                                     ]
                                 }
-                                f_out.write(json.dumps(
-                                    conversation_data, ensure_ascii=False) + "\n")
+                                f_out.write(
+                                    json.dumps(conversation_data, ensure_ascii=False)
+                                    + "\n"
+                                )
                                 processed_count += 1
             logger.info(
-                "✅ File processed: %s (%d conversations added)", file, processed_count)
+                "✅ File processed: %s (%d conversations added)", file, processed_count
+            )
     pbar.close()
     logger.info("✅ Filtered dataset saved to %s", output_file)
 
