@@ -40,3 +40,17 @@ To create and activate the environment, run:
 cconda env create -f environment.yml
 conda activate you2agentai
 ```
+
+### 3️⃣ Configure Hugging Face Authentication
+
+To download the Mistral model, you need a Hugging Face account and API token:
+
+1. Create an account on [Hugging Face](https://huggingface.co/join) if you don't have one
+2. Generate an access token at [Hugging Face Access Tokens](https://huggingface.co/docs/hub/security-tokens)
+3. Login using the huggingface-cli:
+
+```bash
+huggingface-cli login
+```
+
+When prompted, input your token. This authentication is necessary for downloading and using the Mistral model for fine-tuning.
