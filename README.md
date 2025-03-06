@@ -37,7 +37,7 @@ If you haven't installed Conda yet, follow the [official Miniconda installation 
 To create and activate the environment, run:
 
 ```bash
-cconda env create -f environment.yml
+conda env create -f environment.yml
 conda activate you2agentai
 ```
 
