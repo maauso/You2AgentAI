@@ -12,8 +12,7 @@ from peft import LoraConfig, get_peft_model
 
 # Load configuration
 config = configparser.ConfigParser()
-config.read('/home/mauso/Documents/github/maauso/You2AgentAI/config.ini')
-
+config.read("config.ini")
 # Load the Mistral model with 4-bit quantization
 model_name = config['fine_tuning']['model_name']
 

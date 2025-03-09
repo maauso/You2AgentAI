@@ -10,7 +10,6 @@ This project follows a structured pipeline to transform raw chat data into a fin
 2. **Tokenization** – Processes the dataset into a tokenized format for model training.
 3. **Fine-Tuning** – Trains a language model using LoRA (Low-Rank Adaptation) techniques for efficient adaptation.
 
-
 By following these steps, the project provides insights into customizing language models for personalized conversational experiences.
 
 ## 📂 Project Structure
@@ -37,8 +36,8 @@ If you haven't installed Conda yet, follow the [official Miniconda installation 
 To create and activate the environment, run:
 
 ```bash
-conda env create -f environment.yml
-conda activate you2agentai
+conda env update --file environment.yml  --prune
+conda activate You2AgentAI
 ```
 
 ### 3️⃣ Configure Hugging Face Authentication
@@ -54,3 +53,19 @@ huggingface-cli login
 ```
 
 When prompted, input your token. This authentication is necessary for downloading and using the Mistral model for fine-tuning.
+
+## Steps to run the project
+
+⚠ Before running the scripts, make sure to update `config.ini` to match your dataset and model preferences.
+
+1. **[Dataset Preparation](1_Dataset/README.md)** → Extracts and filters Telegram chat messages to create a structured dataset.
+2. **[Tokenization](2_Tokenizer/README.md)** → Converts the dataset into a format suitable for training. *
+3. **[Fine-Tuning](3_FineTuning/README.md)** → Trains a custom model to replicate the user's conversational style. 
+
+
+### 💻 Using VSCode Dev Container
+
+A VSCode dev container configuration is available for development. This allows you to set up a consistent development environment using Docker containers.
+
+To use the dev container, open the project in VSCode and follow the prompts to reopen the project in the container.
+
