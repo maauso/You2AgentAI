@@ -6,6 +6,7 @@ model_name = "./mistral-finetuned"  # Path where the fine-tuned model is saved
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
+
 def chat():
     """Interactive chat with the fine-tuned model."""
     print("🤖 You2AgentAI Chat | Type 'exit' to stop")
@@ -20,6 +21,7 @@ def chat():
 
         response = tokenizer.decode(outputs[0], skip_special_tokens=True)
         print(f"AI: {response}")
+
 
 if __name__ == "__main__":
     chat()

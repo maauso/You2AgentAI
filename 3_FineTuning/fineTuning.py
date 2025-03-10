@@ -63,7 +63,8 @@ training_args = TrainingArguments(
     logging_dir=config['fine_tuning']['logging_dir'],
     fp16=True,  # Keep FP16 to save memory
     bf16=False,  # If errors with FP16, change to True
-    gradient_accumulation_steps=int(config['fine_tuning']['gradient_accumulation_steps']),
+    gradient_accumulation_steps=int(
+        config['fine_tuning']['gradient_accumulation_steps']),
 )
 
 # Configure the Trainer

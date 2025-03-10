@@ -100,7 +100,8 @@ def main():
         logger.info("✅ Model '%s' loaded successfully.", spacy_model)
     except OSError:
         logger.warning("🔹 Model '%s' not found. Installing...", spacy_model)
-        subprocess.run(["python", "-m", "spacy", "download", spacy_model], check=True)
+        subprocess.run(
+            ["python", "-m", "spacy", "download", spacy_model], check=True)
         nlp = spacy.load(spacy_model)
 
     # Check if spaCy is using GPU for acceleration
@@ -164,7 +165,8 @@ def main():
                                     ]
                                 }
                                 f_out.write(
-                                    json.dumps(conversation_data, ensure_ascii=False)
+                                    json.dumps(conversation_data,
+                                               ensure_ascii=False)
                                     + "\n"
                                 )
                                 processed_count += 1
