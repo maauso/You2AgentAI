@@ -171,3 +171,6 @@ cython_debug/
 .pypirc
 *.jsonl
 tokenized_telegram_chat/*
+mistral-finetuned/*
+telegram_chats/*.json
+!telegram_chats/example.json
