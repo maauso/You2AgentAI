@@ -35,7 +35,7 @@ tokenizer.pad_token = tokenizer.eos_token  # Use the EOS token as padding
 
 print("Model loaded successfully!")
 # Load the tokenized dataset
-dataset = load_from_disk(config['filtered_dataset']['json_file'])
+dataset = load_from_disk(config['fine_tuning']['tokenized_telegram_chat'])
 
 # Configure LoRA (train only some layers of the model)
 lora_config = LoraConfig(
@@ -63,7 +63,11 @@ training_args = TrainingArguments(
     logging_dir=config['fine_tuning']['logging_dir'],
     fp16=True,  # Keep FP16 to save memory
     bf16=False,  # If errors with FP16, change to True
-    gradient_accumulation_steps=int(config['fine_tuning']['gradient_accumulation_steps']),
+    logging_steps=int(config['fine_tuning']['logging_steps']),
+    log_level="info",
+    eval_steps = int(config['fine_tuning']['eval_steps']),
+    gradient_accumulation_steps=int(
+        config['fine_tuning']['gradient_accumulation_steps']),
 )
 
 # Configure the Trainer

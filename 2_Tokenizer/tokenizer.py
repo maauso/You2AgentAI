@@ -19,7 +19,8 @@ except Exception as e:
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # Load the dataset in JSONL format and access the "train" part
-dataset = load_dataset("json", data_files="./filtered_telegram_chat.jsonl")["train"]
+dataset = load_dataset(
+    "json", data_files="./filtered_telegram_chat.jsonl")["train"]
 
 # Define a padding token to avoid errors
 tokenizer.pad_token = tokenizer.eos_token
@@ -66,7 +67,8 @@ tokenized_datasets = dataset.map(
 )
 
 # Filter out empty examples
-tokenized_datasets = tokenized_datasets.filter(lambda x: len(x["input_ids"]) > 0)
+tokenized_datasets = tokenized_datasets.filter(
+    lambda x: len(x["input_ids"]) > 0)
 
 # Verify the content of the tokenized dataset
 print("\n📊 Dataset statistics:")
@@ -75,7 +77,8 @@ print(f"Number of examples: {len(tokenized_datasets)}")
 # Calculate token statistics
 total_tokens = sum(len(example["input_ids"]) for example in tokenized_datasets)
 avg_tokens = (
-    total_tokens / len(tokenized_datasets) if len(tokenized_datasets) > 0 else 0
+    total_tokens /
+    len(tokenized_datasets) if len(tokenized_datasets) > 0 else 0
 )
 
 # Save the tokenized dataset
