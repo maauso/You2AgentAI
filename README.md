@@ -19,7 +19,7 @@ The project consists of three main stages, each with its own dedicated documenta
 1. **[Dataset Preparation](1_Dataset/README.md)** → Extracts and filters Telegram chat messages to create a structured dataset.
 2. **[Tokenization](2_Tokenizer/README.md)** → Converts the dataset into a format suitable for training. *(Coming soon)*
 3. **[Fine-Tuning](3_FineTuning/README.md)** → Trains a custom model to replicate the user's conversational style. *(Coming soon)*
-3. **[Testing Agent](4_Testing_agent/README.md)** → Interacts with the fine-tuned model using GPU acceleration and tests its conversational capabilities. *(Coming soon)*
+3. **[Testing Agent](4_Testing_agent/README.md)** → Interacts with the fine-tuned model using GPU acceleration and tests its conversational capabilities.
 4. **[Config](config.ini)** → Configuration file for the project.
 5. **[Environment](environment.yml)** → Conda environment file for setting up the project.
 6. **[Telegram Chats](telegram_chats/)** → Directory containing raw Telegram chat data.
