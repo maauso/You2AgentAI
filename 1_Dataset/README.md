@@ -11,6 +11,18 @@ This step processes raw Telegram chat data to generate a structured dataset for 
    - Avoiding messages that contain only emojis.
 3. Saves the processed dataset as a structured JSONL file.
 
+## 📜 Configuration File Structure
+
+The dataset preparation script uses the following parameters from the `[filtered_dataset]` section in `config.ini`:
+
+| Parameter | Description |
+|-----------|-------------|
+| `user_target` | Target user for persona extraction - affects data filtering selection. Should be a unique identifier. |
+| `spacy_model` | SpaCy NLP model for text analysis - impacts tokenization quality. Options: en_core_web_sm, en_core_web_md, en_core_web_lg |
+| `json_file` | Source dataset file - use JSONL format for line-by-line processing. Should contain message history. |
+| `question_words` | Query identifiers - used to detect questions in conversations. Can be extended with domain-specific terms. |
+
+
 ## 🚀 Running the Script
 
 To generate the dataset, run:
