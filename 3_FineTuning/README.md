@@ -13,7 +13,7 @@ This step trains a language model using the tokenized dataset to replicate the u
 To train the model, run:
 
 ```bash
-python 3_FineTunning/fineTuning.py
+python 3_FineTuning/fineTuning.py
 ```
 
 The trained model will be saved in the directory specified in the configuration file (`config.ini`).

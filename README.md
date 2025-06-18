@@ -1,4 +1,7 @@
 # You2AgentAI
+**Fine-tune an LLM to chat like you using Telegram conversations.**
+
+![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python)
 
 You2AgentAI is a project designed to provide a hands-on approach to fine-tuning AI models using real-world conversational data. The goal is to explore how a language model can be adapted to mimic a specific user's conversational style by leveraging Telegram chat history.
 
@@ -15,7 +18,7 @@ The project consists of four key stages:
 
 ## 📂 Project Structure
 
-The project consists of three main stages, each with its own dedicated documentation:
+The project consists of four main stages, each with its own dedicated documentation:
 
 1. **[Dataset Preparation](1_Dataset/README.md)** → Extracts and filters Telegram chat messages to create a structured dataset.
 2. **[Tokenization](2_Tokenizer/README.md)** → Converts the dataset into a format suitable for training.
@@ -62,7 +65,7 @@ When prompted, input your token. This authentication is necessary for downloadin
 ⚠ Before running the scripts, make sure to update `config.ini` to match your dataset and model preferences.
 
 1. **[Dataset Preparation](1_Dataset/README.md)** → Extracts and filters Telegram chat messages to create a structured dataset.
-2. **[Tokenization](2_Tokenizer/README.md)** → Converts the dataset into a format suitable for training. *
+2. **[Tokenization](2_Tokenizer/README.md)** → Converts the dataset into a format suitable for training.
 3. **[Fine-Tuning](3_FineTuning/README.md)** → Trains a custom model to replicate the user's conversational style. 
 4. **[Testing Agent](4_Testing_agent/README.md)** → Interacts with the fine-tuned model using GPU acceleration and tests its conversational capabilities.
 

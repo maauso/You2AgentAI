@@ -8,12 +8,12 @@ After completing the fine-tuning process, you can test the model by running the 
 
 ### 1️⃣ Activate the Conda Environment
 ```bash
-conda activate you2agentai
+conda activate You2AgentAI
 ```
 
 ### 2️⃣ Run the Chat Agent with GPU
 ```bash
-python 4_Testing/chat_agent.py
+python 4_Testing_agent/chat_agent.py
 ```
 
 Once the script is running, you can start chatting with the model. Type a message and press **Enter** to get a response.
