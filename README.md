@@ -62,7 +62,7 @@ When prompted, input your token. This authentication is necessary for downloadin
 ⚠ Before running the scripts, make sure to update `config.ini` to match your dataset and model preferences.
 
 1. **[Dataset Preparation](1_Dataset/README.md)** → Extracts and filters Telegram chat messages to create a structured dataset.
-2. **[Tokenization](2_Tokenizer/README.md)** → Converts the dataset into a format suitable for training. *
+2. **[Tokenization](2_Tokenizer/README.md)** → Converts the dataset into a format suitable for training.
 3. **[Fine-Tuning](3_FineTuning/README.md)** → Trains a custom model to replicate the user's conversational style. 
 4. **[Testing Agent](4_Testing_agent/README.md)** → Interacts with the fine-tuned model using GPU acceleration and tests its conversational capabilities.
 
