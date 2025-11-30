@@ -13,7 +13,7 @@ conda activate you2agentai
 
 ### 2️⃣ Run the Chat Agent with GPU
 ```bash
-python 4_Testing/chat_agent.py
+python 4_Testing_agent/chat_agent.py
 ```
 
 Once the script is running, you can start chatting with the model. Type a message and press **Enter** to get a response.
