@@ -8,74 +8,92 @@ from transformers import (
     BitsAndBytesConfig,
 )
 from datasets import load_from_disk
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
-# Load configuration
+# 1. Load configuration
 config = configparser.ConfigParser()
 config.read("config.ini")
-# Load the Mistral model with 4-bit quantization
-model_name = config['fine_tuning']['model_name']
+model_name = config['tokenizer']['model_name'] # Using the base model name from tokenizer section
 
+# 2. Implementation of QLoRA (4-bit Quantization)
+# Optimized for RTX 4090 to fit 7B model in ~5GB VRAM
 bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,  # Load the model in 4 bits to save memory
-    bnb_4bit_compute_dtype=torch.float16,  # Use float16 for computations
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16, # Crucial for Ampere/Ada Lovelace architectures
     bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",  # Use double quantization for higher efficiency
 )
 
+# 3. Load Base Model with Flash Attention 2
+print(f"🚀 Loading base model: {model_name}...")
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=bnb_config,
-    device_map="auto",  # Load on GPU if available
+    device_map="auto",
+    attn_implementation="flash_attention_2", # Hardware acceleration for RTX 40 series
+    torch_dtype=torch.bfloat16
 )
 
-# Load the tokenizer and define the padding token
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token  # Use the EOS token as padding
+# Prepare model for k-bit training (handles gradient checkpointing etc.)
+model = prepare_model_for_kbit_training(model)
 
-print("Model loaded successfully!")
-# Load the tokenized dataset
-dataset = load_from_disk(config['fine_tuning']['tokenized_telegram_chat'])
-
-# Configure LoRA (train only some layers of the model)
-lora_config = LoraConfig(
-    r=4,  # Increase r since we have more VRAM on the RTX 4090
-    lora_alpha=16,  # Adjusted proportionally to r (usually 2*r)
-    lora_dropout=0.1,  # Maintains stability
+# 4. High-Capacity LoRA Configuration
+# Increased 'r' to learn ChatML format from a Base model
+peft_config = LoraConfig(
+    r=16,
+    lora_alpha=32, # 2x the value of r
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"], # Covering more projections
+    lora_dropout=0.05,
     bias="none",
-    task_type="CAUSAL_LM",
+    task_type="CAUSAL_LM"
 )
 
-model = get_peft_model(model, lora_config)
-model.print_trainable_parameters()  # See how many parameters will be trained
+model = get_peft_model(model, peft_config)
 
-# Configure the training arguments
+# Resize embeddings to account for new ChatML tokens added in Step 2
+# Note: Tokenizer should have been saved or re-loaded with added tokens
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+special_tokens = {"additional_special_tokens": ["<|im_start|>", "<|im_end|>"]}
+tokenizer.add_special_tokens(special_tokens)
+model.resize_token_embeddings(len(tokenizer))
+
+model.print_trainable_parameters()
+
+# 5. Load Tokenized Dataset (Prepared with Masking)
+dataset_path = "tokenized_dataset_chatml"
+print(f"📦 Loading tokenized dataset from {dataset_path}...")
+dataset = load_from_disk(dataset_path)
+
+# 6. Optimized Training Arguments for Base Models
 training_args = TrainingArguments(
     output_dir=config['fine_tuning']['output_dir'],
-    eval_strategy="no",  # Disable evaluation to speed up training
-    learning_rate=float(config['fine_tuning']['learning_rate']),
     per_device_train_batch_size=int(config['fine_tuning']['batch_size']),
-    per_device_eval_batch_size=int(config['fine_tuning']['batch_size']),
+    gradient_accumulation_steps=int(config['fine_tuning']['gradient_accumulation_steps']),
+    learning_rate=2e-4, # More aggressive for Base models
+    lr_scheduler_type="cosine", # Smooth decay
+    weight_decay=0.01,
+    logging_steps=10,
     num_train_epochs=int(config['fine_tuning']['num_train_epochs']),
-    weight_decay=float(config['fine_tuning']['weight_decay']),
-    save_total_limit=int(config['fine_tuning']['save_total_limit']),
-    save_steps=int(config['fine_tuning']['save_steps']),
-    logging_dir=config['fine_tuning']['logging_dir'],
-    fp16=True,  # Keep FP16 to save memory
-    bf16=False,  # If errors with FP16, change to True
-    logging_steps=int(config['fine_tuning']['logging_steps']),
-    log_level="info",
-    eval_steps = int(config['fine_tuning']['eval_steps']),
-    gradient_accumulation_steps=int(
-        config['fine_tuning']['gradient_accumulation_steps']),
+    bf16=True, # RTX 4090 native support
+    fp16=False,
+    optim="paged_adamw_8bit", # VRAM saving optimizer
+    report_to="wandb", # Integration for professional monitoring
+    save_strategy="steps",
+    save_steps=100,
+    save_total_limit=2,
+    remove_unused_columns=False, # Important when using custom labels/masking
 )
 
-# Configure the Trainer
+# 7. Start Training
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=dataset,  # Use dataset directly without ["train"]
+    train_dataset=dataset,
 )
 
-# Start training
+print("🔥 Starting fine-tuning...")
 trainer.train()
+
+# 8. Save the Peft Adapter
+trainer.model.save_pretrained("mistral-7b-chatml-adapter")
+print("✅ Training complete. Adapter saved.")
