@@ -1,73 +1,39 @@
 # Dataset Preparation
 
-This step processes raw Telegram chat data to generate a structured dataset for training.
+This step migrates from local Telegram data to a professional workflow using the **OpenAssistant Guanaco** dataset from Hugging Face.
 
-## 📌 How It Works
+## 📌 Why OpenAssistant Guanaco?
 
-1. Reads exported Telegram JSON chat files from the `telegram_chats/` directory.
-2. Filters messages based on:
-   - Whether they were sent by the target user.
-   - Whether they are responses to a detected question.
-   - Avoiding messages that contain only emojis.
-3. Saves the processed dataset as a structured JSONL file.
+We chose the `timdettmers/openassistant-guanaco` dataset because it is a gold standard for QLoRA fine-tuning tutorials. It offers:
+- **Reproducibility**: Anyone can run the script without needing their own private chat logs.
+- **High Quality**: Well-balanced technical and conversational data.
+- **Ease of Integration**: Perfectly structured for rapid fine-tuning experiments.
 
-## 📜 Configuration File Structure
+## 🛠️ Standardization to ChatML
 
-The dataset preparation script uses the following parameters from the `[filtered_dataset]` section in `config.ini`:
+Since we are training a **Base** model (Mistral-7B-v0.3), we must explicitly define where each speaker begins and ends. We convert the raw dataset format into **ChatML**, which uses `<|im_start|>` and `<|im_end|>` tokens.
 
-| Parameter | Description |
-|-----------|-------------|
-| `user_target` | Target user for persona extraction - affects data filtering selection. Should be a unique identifier. |
-| `spacy_model` | SpaCy NLP model for text analysis - impacts tokenization quality. Options: en_core_web_sm, en_core_web_md, en_core_web_lg |
-| `json_file` | Source dataset file - use JSONL format for line-by-line processing. Should contain message history. |
-| `question_words` | Query identifiers - used to detect questions in conversations. Can be extended with domain-specific terms. |
+Example of ChatML format:
+```text
+<|im_start|>user
+What is a distributed system?<|im_end|>
+<|im_start|>assistant
+It is a collection of autonomous computers that work together...<|im_end|>
+```
 
+## 🚀 How It Works
 
-## 🚀 Running the Script
+The script `1_Dataset/prepare_dataset.py`:
+1. **Loads** the `train` split of `timdettmers/openassistant-guanaco` directly from the Hugging Face Hub.
+2. **Standardizes** the format to ChatML using string replacement.
+3. **Displays** the first 3 examples for visual inspection, ensuring the prompt template is correctly applied.
 
-To generate the dataset, run:
+## 🏃 Running the Script
+
+To prepare the dataset, execute:
 
 ```bash
-python 1_Dataset/generate_filtered_dataset.py
+python 1_Dataset/prepare_dataset.py
 ```
 
-The resulting dataset will be saved as `filtered_dataset.jsonl` in the root directory.
-This file will follow a structured format suitable for fine-tuning AI models.
-
-## 📜 Output File Structure
-
-After processing the dataset, the script generates a JSONL file where each entry represents a structured conversation between a user and an assistant.
-
-This format is widely used in fine-tuning frameworks (e.g., Hugging Face's Trainer, OpenAI models) as it defines clear input-response relationships.
-
-Fine-tuning a model with this structure allows it to learn and mimic specific conversational patterns.
-
-As a goal for this project, we want to train a model to speak like us.
-This dataset helps capture our style and responses.
-
-Below is an example of the expected output format:
-
-```json
-{
-    "messages": [
-        {
-            "role": "user",
-            "content": "Hey, can you help me with something?"
-        },
-        {
-            "role": "assistant",
-            "content": "Sure! What do you need?"
-        }
-    ]
-}
-```
-
-## 🔍 Why This Structure?
-
-This format ensures that:
-
-✔ **Contextual Understanding** – The model learns relationships between user inputs and responses.
-
-✔ **Personalized Conversations** – The assistant's replies reflect the conversational patterns of the target user.
-
-✔ **Compatibility** – The dataset aligns with most fine-tuning frameworks, reducing preprocessing effort.
+Upon execution, you should see the first few examples printed in ChatML format, confirming the dataset is ready for training.
