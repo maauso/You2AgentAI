@@ -1,8 +1,7 @@
 from transformers import AutoTokenizer
-import json
 from datasets import load_dataset
-from tqdm import tqdm
 import configparser
+import os
 
 # Load configuration
 config = configparser.ConfigParser()
@@ -15,76 +14,83 @@ except Exception as e:
     print(f"Error loading configuration: {e}")
     exit(1)
 
-# Load the Mistral 7B tokenizer
+# 1. Load the Tokenizer
+print(f"🔄 Loading tokenizer for {model_name}...")
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-# Load the dataset in JSONL format and access the "train" part
-dataset = load_dataset(
-    "json", data_files="./filtered_telegram_chat.jsonl")["train"]
+# 2. Configure Special Tokens (ChatML)
+# We add <|im_start|> and <|im_end|> as special tokens so they are treated as atomic units.
+special_tokens = {"additional_special_tokens": ["<|im_start|>", "<|im_end|>"]}
+tokenizer.add_special_tokens(special_tokens)
 
-# Define a padding token to avoid errors
-tokenizer.pad_token = tokenizer.eos_token
+# Define pad_token (Standard practice for Mistral is using eos_token or the new im_end)
+tokenizer.pad_token = "<|im_end|>"
+tokenizer.padding_side = "right" # Standard for training causal LMs
 
+# 3. Load Dataset (Prepared in Step 1)
+print("📦 Loading and formatting 'timdettmers/openassistant-guanaco'...")
+raw_dataset = load_dataset("timdettmers/openassistant-guanaco", split="train")
 
-def tokenize_function(example):
+def preprocess_function(example):
     """
-    Concatenate the messages within 'messages' in a user/assistant format.
+    Transforms Guanaco format to ChatML and applies Label Masking.
+    Labels are set to -100 for the user prompt so the model only learns from assistant responses.
     """
-    try:
-        messages = example.get("messages", [])
-
-        if not isinstance(messages, list) or len(messages) == 0:
-            return {"input_ids": [], "attention_mask": [], "labels": []}
-
-        conversation = "\n".join(
-            f"{msg['role'].capitalize()}: {msg['content']}"
-            for msg in messages
-            if "role" in msg and "content" in msg
-        )
-
-        tokens = tokenizer(
-            conversation,
-            padding="max_length",
-            truncation=True,
-            max_length=MAX_LENGTH,
-            return_tensors="pt",
-        )
-
-        return {
-            "input_ids": tokens["input_ids"][0].tolist(),
-            "attention_mask": tokens["attention_mask"][0].tolist(),
-            "labels": tokens["input_ids"][0].tolist(),
-        }
-    except Exception as e:
-        print(f"Error in tokenization: {e}")
+    raw_text = example['text']
+    
+    # Standardize to ChatML
+    # Guanaco: ### Human: {user_input}### Assistant: {assistant_response}
+    parts = raw_text.split("### Assistant:")
+    if len(parts) < 2:
         return {"input_ids": [], "attention_mask": [], "labels": []}
+        
+    user_part = parts[0].replace("### Human:", "<|im_start|>user\n")
+    assistant_part = parts[1]
+    
+    full_text = f"{user_part}<|im_end|>\n<|im_start|>assistant\n{assistant_part}<|im_end|>"
+    
+    # Tokenize the full text
+    tokenized = tokenizer(
+        full_text,
+        truncation=True,
+        max_length=MAX_LENGTH,
+        add_special_tokens=False # We handle special tokens manually in the text
+    )
+    
+    input_ids = list(tokenized["input_ids"])
+    labels = list(input_ids)
+    
+    # --- LABEL MASKING LOGIC ---
+    # We want to find where the assistant response starts.
+    assistant_start_tag = tokenizer.encode("<|im_start|>assistant\n", add_special_tokens=False)
+    
+    # Find the start index of the assistant response in input_ids
+    for i in range(len(input_ids) - len(assistant_start_tag)):
+        if input_ids[i:i+len(assistant_start_tag)] == assistant_start_tag:
+            # Mask everything before the actual response starts (including the tag)
+            for j in range(i + len(assistant_start_tag)):
+                labels[j] = -100
+            break
 
+    return {
+        "input_ids": input_ids,
+        "attention_mask": tokenized["attention_mask"],
+        "labels": labels
+    }
 
-# Apply tokenization to the entire dataset without batching
-print("🔄 Tokenizing dataset...")
-tokenized_datasets = dataset.map(
-    tokenize_function, remove_columns=dataset.column_names, desc="Tokenizing"
-)
-
-# Filter out empty examples
-tokenized_datasets = tokenized_datasets.filter(
-    lambda x: len(x["input_ids"]) > 0)
-
-# Verify the content of the tokenized dataset
-print("\n📊 Dataset statistics:")
-print(f"Number of examples: {len(tokenized_datasets)}")
-
-# Calculate token statistics
-total_tokens = sum(len(example["input_ids"]) for example in tokenized_datasets)
-avg_tokens = (
-    total_tokens /
-    len(tokenized_datasets) if len(tokenized_datasets) > 0 else 0
+print("🛠️ Tokenizing and applying label masking...")
+tokenized_dataset = raw_dataset.map(
+    preprocess_function,
+    remove_columns=raw_dataset.column_names,
+    desc="Tokenizing with ChatML Masking"
 )
 
 # Save the tokenized dataset
-tokenized_datasets.save_to_disk("tokenized_telegram_chat")
+output_dir = "tokenized_dataset_chatml"
+tokenized_dataset.save_to_disk(output_dir)
 
-print("\n✅ Process completed:")
-print(f"💾 Dataset saved in 'tokenized_telegram_chat'")
-print(f"🔢 Total tokens: {total_tokens:,}")
-print(f"📈 Average tokens per example: {avg_tokens:.2f}")
+print(f"\n✅ Tokenization complete!")
+print(f"📁 Saved to: {output_dir}")
+print(f"📝 Special tokens added: {tokenizer.additional_special_tokens}")
+print(f"📏 Max length: {MAX_LENGTH}")
+print(f"📊 Total examples: {len(tokenized_dataset)}")

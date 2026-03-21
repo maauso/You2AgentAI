@@ -1,57 +1,45 @@
-# Tokenization Module
+# Tokenization & ChatML Formatting
 
-This module transforms the filtered dataset of conversations into a tokenized format suitable for model training.
+This module defines the technical core of the fine-tuning process: how the model perceives the conversation structure and how we optimize its learning.
 
-## 🔍 What is Tokenization?
+## 🛠️ ChatML Special Tokens
 
-Tokenization is the process of converting raw text into numerical tokens that machine learning models can understand. For language models, this involves:
+When using a **Base** model like Mistral-7B-v0.3, the tokenizer doesn't natively recognize ChatML delimiters. We explicitly add `<|im_start|>` and `<|im_end|>` as special tokens. This ensures:
+- They are treated as **atomic units** (not split into sub-words).
+- The model learns the exact boundaries of user and assistant turns.
 
-1. Breaking text into smaller units (tokens) such as words, subwords, or characters
-2. Converting these tokens into numerical IDs using a vocabulary
-3. Creating additional metadata like attention masks to help the model process the input correctly
+## 🧠 Label Masking (Expert Logic)
 
-Tokenization is a critical preprocessing step that bridges human language and the numerical representation needed for neural networks.
+This is a critical optimization for high-quality fine-tuning. Instead of training the model to predict the entire conversation, we apply **Label Masking**:
+1. We locate the transition from user to assistant.
+2. We set the `labels` for the user's prompt to `-100`.
+3. Since PyTorch's loss functions ignore `-100`, the model only calculates loss (and learns) from the **assistant's responses**.
 
-## 🛠️ How the Tokenizer Works
+This prevents the model from wasting capacity "learning" how to repeat the user's input and focuses it entirely on generating the correct response.
 
-The `tokenizer.py` script performs the following operations:
+## ⚙️ Configuration
 
-1. **Configuration Loading**: Reads parameters from `config.ini`
-2. **Tokenizer Initialization**: Loads a pre-trained tokenizer (Mistral 7B by default)
-3. **Dataset Loading**: Imports the filtered conversation dataset
-4. **Conversation Processing**: For each conversation:
-   - Concatenates messages in a user/assistant format
-   - Applies padding and truncation to ensure uniform length
-   - Generates input IDs, attention masks, and labels
-5. **Statistics Generation**: Calculates and displays metrics about the tokenized dataset
-6. **Dataset Saving**: Stores the tokenized data for the fine-tuning process
+The script uses parameters from `config.ini`:
+- `model_name`: The base model to load (e.g., `mistralai/Mistral-7B-v0.3`).
+- `max_length`: The context window limit (e.g., `512` or `1024`).
 
-## ⚙️ Configuration Parameters
+## 🚀 How It Works
 
-The tokenizer uses the following parameters from the `[tokenizer]` section in `config.ini`:
+The `2_Tokenizer/tokenizer.py` script:
+1. **Initializes** the tokenizer and adds ChatML tokens.
+2. **Resizes** model embeddings (handled in the fine-tuning stage but prepared here).
+3. **Processes** the Guanaco dataset into ChatML sequences.
+4. **Applies** the masking logic to the labels.
+5. **Saves** the processed tensors to `tokenized_dataset_chatml`.
 
-| Parameter | Description |
-|-----------|-------------|
-| `max_length` | Maximum sequence length for tokens (default: 512). Shorter values use less memory but might truncate longer conversations. |
-| `model_name` | The pre-trained model whose tokenizer will be used (default: `"mistralai/Mistral-7B-v0.1"`). This should match the model you plan to fine-tune. |
+## 🏃 Running the Tokenizer
 
-## 🚀 Running the Tokenizer
-
-To tokenize your filtered dataset, run:
+Execute the following command to process your data:
 
 ```bash
 python 2_Tokenizer/tokenizer.py
 ```
 
-The script will:
-1. Process the filtered dataset from the previous step
-2. Display statistics about the tokenized data
-3. Save the tokenized dataset to `tokenized_telegram_chat` directory
+## 🛑 Stop Tokens (Note for Inference)
 
-## 📊 Output
-
-After successful execution, the script provides:
-- Number of examples processed
-- Total token count
-- Average tokens per example
-- Stored tokenized dataset ready for fine-tuning
+By defining `<|im_end|>` here, we ensure that during inference, the model knows exactly when to stop generating. Without this, a Base model would continue hallucinating text indefinitely.
