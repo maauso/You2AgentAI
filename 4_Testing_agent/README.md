@@ -1,46 +1,39 @@
-# Model Testing - You2AgentAI
+# Testing & Inference
 
-This section explains how to interact with the fine-tuned model using GPU acceleration and test its conversational capabilities.
+This final stage is where you see the results of the fine-tuning process. Since we used a **Base** model, inference requires precise manual control to maintain the conversational structure.
 
-## 🚀 Running the Chat Agent
+## 🛠️ ChatML Inference Template
 
-After completing the fine-tuning process, you can test the model by running the interactive chatbot.
-
-### 1️⃣ Activate the Conda Environment
-```bash
-conda activate you2agentai
+To ensure the model responds correctly, every input is wrapped in the exact **ChatML** template used during training:
+```text
+<|im_start|>user
+{user_query}<|im_end|>
+<|im_start|>assistant
 ```
+The script automatically handles this formatting, ensuring the model identifies the beginning of its turn.
 
-### 2️⃣ Run the Chat Agent with GPU
-```bash
-python 4_Testing/chat_agent.py
-```
+## 🧠 Stopping Criteria (Preventing Hallucinations)
 
-Once the script is running, you can start chatting with the model. Type a message and press **Enter** to get a response.
+Base models do not intuitively know when to stop talking. Without a stopping criterion, the model might start simulating new user turns or generating endless text.
+- We implement a `StopOnToken` class that monitors the output.
+- Generation terminates immediately when the `<|im_end|>` token is emitted.
 
-### 3️⃣ Exit the Chat
-To exit, type:
-```bash
-exit
-```
+## 🎲 Decoding Strategies
 
-## ⚙ Prerequisites
-- Ensure the fine-tuned model is saved in `./mistral-finetuned/checkpoint-XXX/`.
-- The base model `mistralai/Mistral-7B-Instruct-v0.3` should be available.
-- The `config.ini` file should be properly set up.
-- The Conda environment should be activated before running the script.
-- The system should have enough VRAM available to run the model on **GPU**.
+We provide a balance between coherence and creativity through sampling parameters:
+- **Temperature (0.8)**: Adds enough variability for a "human-like" feel without losing track of the topic.
+- **Top-p (0.9)**: Uses nucleus sampling to focus on the most probable tokens, ensuring technical accuracy.
 
-## 🔍 Troubleshooting
-If you encounter issues, check the following:
-- **CUDA Out of Memory (OOM):** Reduce `max_length` in `chat_agent.py`:
-  ```python
-  outputs = model.generate(**inputs, max_length=100)
-  ```
-- **Slow performance:** Ensure you are running on GPU (`device_map="auto"`).
-- **Incorrect responses:** Verify that the fine-tuning process completed correctly and that `adapter_path` is set to the correct checkpoint.
+If you want a simple explanation plus internal details of each generation parameter, read the [inference glossary](GLOSSARY.md).
 
----
+## 🚀 How to Run
 
-This step allows you to validate how well the model replicates the conversational style based on the fine-tuning process. 🚀
+1. Ensure the fine-tuning from Step 3 completed and the adapter is saved in `mistral-7b-chatml-adapter`.
+2. Run the interactive chat script:
+   ```bash
+   python 4_Testing_agent/chat_agent.py
+   ```
 
+## 📝 Debugging Tip
+
+The script includes a **Debug Mode** that prints the exact prompt sent to the model. This allows you to verify that the ChatML tags are present and correctly formatted, which is the most common point of failure in fine-tuning inference.

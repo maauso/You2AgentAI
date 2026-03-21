@@ -1,90 +1,106 @@
-from transformers import AutoTokenizer
-import json
-from datasets import load_dataset
-from tqdm import tqdm
 import configparser
+import os
+
+from datasets import load_from_disk
+from transformers import AutoTokenizer
+
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+CONFIG_PATH = os.path.join(BASE_DIR, "config.ini")
 
 # Load configuration
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read(CONFIG_PATH)
 
 try:
     model_name = config.get("tokenizer", "model_name")
     MAX_LENGTH = int(config.get("tokenizer", "max_length"))
+    prepared_dataset_dir = config.get(
+        "dataset", "prepared_dataset_dir", fallback="prepared_dataset_chatml")
+    tokenized_dataset_dir = config.get(
+        "tokenizer", "output_dir", fallback="tokenized_dataset_chatml")
 except Exception as e:
     print(f"Error loading configuration: {e}")
     exit(1)
 
-# Load the Mistral 7B tokenizer
+prepared_dataset_path = os.path.join(BASE_DIR, prepared_dataset_dir)
+tokenized_dataset_path = os.path.join(BASE_DIR, tokenized_dataset_dir)
+
+# 1. Load the Tokenizer
+print(f"🔄 Loading tokenizer for {model_name}...")
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-# Load the dataset in JSONL format and access the "train" part
-dataset = load_dataset(
-    "json", data_files="./filtered_telegram_chat.jsonl")["train"]
-
-# Define a padding token to avoid errors
-tokenizer.pad_token = tokenizer.eos_token
-
-
-def tokenize_function(example):
-    """
-    Concatenate the messages within 'messages' in a user/assistant format.
-    """
-    try:
-        messages = example.get("messages", [])
-
-        if not isinstance(messages, list) or len(messages) == 0:
-            return {"input_ids": [], "attention_mask": [], "labels": []}
-
-        conversation = "\n".join(
-            f"{msg['role'].capitalize()}: {msg['content']}"
-            for msg in messages
-            if "role" in msg and "content" in msg
-        )
-
-        tokens = tokenizer(
-            conversation,
-            padding="max_length",
-            truncation=True,
-            max_length=MAX_LENGTH,
-            return_tensors="pt",
-        )
-
-        return {
-            "input_ids": tokens["input_ids"][0].tolist(),
-            "attention_mask": tokens["attention_mask"][0].tolist(),
-            "labels": tokens["input_ids"][0].tolist(),
-        }
-    except Exception as e:
-        print(f"Error in tokenization: {e}")
-        return {"input_ids": [], "attention_mask": [], "labels": []}
-
-
-# Apply tokenization to the entire dataset without batching
-print("🔄 Tokenizing dataset...")
-tokenized_datasets = dataset.map(
-    tokenize_function, remove_columns=dataset.column_names, desc="Tokenizing"
+# 2. Configure Special Tokens (ChatML)
+# We add <|im_start|> and <|im_end|> as special tokens so they are treated as atomic units.
+special_tokens = {"additional_special_tokens": ["<|im_start|>", "<|im_end|>"]}
+tokenizer.add_special_tokens(special_tokens)
+added_special_tokens = tokenizer.special_tokens_map.get(
+    "additional_special_tokens",
+    special_tokens["additional_special_tokens"],
 )
 
-# Filter out empty examples
-tokenized_datasets = tokenized_datasets.filter(
-    lambda x: len(x["input_ids"]) > 0)
+# Define pad_token (Standard practice for Mistral is using eos_token or the new im_end)
+tokenizer.pad_token = "<|im_end|>"
+tokenizer.padding_side = "right"  # Standard for training causal LMs
 
-# Verify the content of the tokenized dataset
-print("\n📊 Dataset statistics:")
-print(f"Number of examples: {len(tokenized_datasets)}")
+# 3. Load Dataset (Prepared in Step 1)
+print(f"📦 Loading prepared dataset from {prepared_dataset_path}...")
+raw_dataset = load_from_disk(prepared_dataset_path)
 
-# Calculate token statistics
-total_tokens = sum(len(example["input_ids"]) for example in tokenized_datasets)
-avg_tokens = (
-    total_tokens /
-    len(tokenized_datasets) if len(tokenized_datasets) > 0 else 0
+
+def preprocess_function(example):
+    """
+    Applies label masking to a dataset that was already standardized to ChatML.
+    Labels are set to -100 for the user prompt so the model only learns from assistant responses.
+    """
+    chatml_text = example["text"]
+
+    if "<|im_start|>assistant\n" not in chatml_text:
+        return {"input_ids": [], "attention_mask": [], "labels": []}
+
+    # Tokenize the full text
+    tokenized = tokenizer(
+        chatml_text,
+        truncation=True,
+        max_length=MAX_LENGTH,
+        add_special_tokens=False  # We handle special tokens manually in the text
+    )
+
+    input_ids = list(tokenized["input_ids"])
+    labels = list(input_ids)
+
+    # --- LABEL MASKING LOGIC ---
+    # We want to find where the assistant response starts.
+    assistant_start_tag = tokenizer.encode(
+        "<|im_start|>assistant\n", add_special_tokens=False)
+
+    # Find the start index of the assistant response in input_ids
+    for i in range(len(input_ids) - len(assistant_start_tag)):
+        if input_ids[i:i+len(assistant_start_tag)] == assistant_start_tag:
+            # Mask everything before the actual response starts (including the tag)
+            for j in range(i + len(assistant_start_tag)):
+                labels[j] = -100
+            break
+
+    return {
+        "input_ids": input_ids,
+        "attention_mask": tokenized["attention_mask"],
+        "labels": labels
+    }
+
+
+print("🛠️ Tokenizing and applying label masking...")
+tokenized_dataset = raw_dataset.map(
+    preprocess_function,
+    remove_columns=raw_dataset.column_names,
+    desc="Tokenizing with ChatML Masking"
 )
 
 # Save the tokenized dataset
-tokenized_datasets.save_to_disk("tokenized_telegram_chat")
+tokenized_dataset.save_to_disk(tokenized_dataset_path)
 
-print("\n✅ Process completed:")
-print(f"💾 Dataset saved in 'tokenized_telegram_chat'")
-print(f"🔢 Total tokens: {total_tokens:,}")
-print(f"📈 Average tokens per example: {avg_tokens:.2f}")
+print(f"\n✅ Tokenization complete!")
+print(f"📁 Saved to: {tokenized_dataset_path}")
+print(f"📝 Special tokens added: {added_special_tokens}")
+print(f"📏 Max length: {MAX_LENGTH}")
+print(f"📊 Total examples: {len(tokenized_dataset)}")

@@ -1,4 +1,4 @@
-name: You2AgentAI
+name: Mistral-FineTuning-Lab
 channels:
   - pytorch
   - nvidia
