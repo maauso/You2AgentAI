@@ -24,6 +24,8 @@ We provide a balance between coherence and creativity through sampling parameter
 - **Temperature (0.8)**: Adds enough variability for a "human-like" feel without losing track of the topic.
 - **Top-p (0.9)**: Uses nucleus sampling to focus on the most probable tokens, ensuring technical accuracy.
 
+If you want a simple explanation plus internal details of each generation parameter, read the [inference glossary](GLOSSARY.md).
+
 ## 🚀 How to Run
 
 1. Ensure the fine-tuning from Step 3 completed and the adapter is saved in `mistral-7b-chatml-adapter`.

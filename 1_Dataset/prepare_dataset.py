@@ -1,5 +1,14 @@
-from datasets import load_dataset
+import configparser
 import os
+
+from datasets import load_dataset
+
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+CONFIG_PATH = os.path.join(BASE_DIR, "config.ini")
+
+config = configparser.ConfigParser()
+config.read(CONFIG_PATH)
 
 
 def format_chatml(example):
@@ -28,6 +37,10 @@ def preview_dataset(dataset, num_samples=3):
 
 
 def main():
+    output_dir = config.get("dataset", "prepared_dataset_dir",
+                            fallback="prepared_dataset_chatml")
+    output_path = os.path.join(BASE_DIR, output_dir)
+
     print("🚀 Loading 'timdettmers/openassistant-guanaco' dataset from Hugging Face...")
     # Load the training split
     dataset = load_dataset("timdettmers/openassistant-guanaco", split="train")
@@ -39,10 +52,11 @@ def main():
     # Visual inspection
     preview_dataset(dataset)
 
-    # Optional: Save locally if needed for the next steps,
-    # though Hugging Face's dataset objects are often used directly.
-    # dataset.to_json("prepared_dataset.jsonl")
+    print(f"💾 Saving prepared dataset to {output_path}...")
+    dataset.save_to_disk(output_path)
+
     print("✅ Dataset preparation complete. 100% of examples are now in ChatML format.")
+    print(f"📁 Saved to: {output_path}")
 
 
 if __name__ == "__main__":

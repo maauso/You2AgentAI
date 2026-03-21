@@ -28,7 +28,7 @@ The script uses parameters from `config.ini`:
 The `2_Tokenizer/tokenizer.py` script:
 1. **Initializes** the tokenizer and adds ChatML tokens.
 2. **Resizes** model embeddings (handled in the fine-tuning stage but prepared here).
-3. **Processes** the Guanaco dataset into ChatML sequences.
+3. **Loads** the prepared ChatML dataset generated in step 1.
 4. **Applies** the masking logic to the labels.
 5. **Saves** the processed tensors to `tokenized_dataset_chatml`.
 
@@ -39,6 +39,8 @@ Execute the following command to process your data:
 ```bash
 python 2_Tokenizer/tokenizer.py
 ```
+
+This step depends on the output of `1_Dataset/prepare_dataset.py`. By default it reads `prepared_dataset_chatml` and writes `tokenized_dataset_chatml`. Both paths are configurable in `config.ini`.
 
 ## 🛑 Stop Tokens (Note for Inference)
 

@@ -170,8 +170,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 *.jsonl
-tokenized_telegram_chat/*
+tokenized_dataset_chatml/*
 mistral-finetuned/*
-telegram_chats/*.json
-!telegram_chats/example.json
 notes.txt
+prepared_dataset_chatml/*
