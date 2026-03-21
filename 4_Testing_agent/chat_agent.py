@@ -101,7 +101,7 @@ def generate_response(user_input):
 
 def chat():
     """Interactive chat loop."""
-    print("🤖 You2AgentAI | ChatML Inference Engine")
+    print("🤖 Mistral-FineTuning-Lab | ChatML Inference Engine")
     print("Type 'exit' to quit. Mode: Fine-tuned Agent\n")
 
     while True:

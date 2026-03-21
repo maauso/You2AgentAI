@@ -1,8 +1,8 @@
-# You2AgentAI
+# Mistral-FineTuning-Lab
 
-You2AgentAI is a project designed to provide a hands-on approach to fine-tuning AI models using real-world conversational data. The goal is to show, step by step, how a language model can be adapted to a conversational format using a reproducible public dataset.
+Mistral-FineTuning-Lab is a project designed to provide a hands-on approach to fine-tuning AI models using real-world conversational data. The goal is to show, step by step, how a language model can be adapted to a conversational format using a reproducible public dataset.
 
-This repository contains the code and documentation for the You2AgentAI project, which is divided into several stages:
+This repository contains the code and documentation for the Mistral-FineTuning-Lab project, which is divided into several stages:
 
 ## 📌 Pipeline Overview
 
@@ -39,7 +39,7 @@ To create and activate the environment, run:
 
 ```bash
 conda env update --file environment.yml  --prune
-conda activate You2AgentAI
+conda activate Mistral-FineTuning-Lab
 ```
 
 ### 3️⃣ Configure Hugging Face Authentication
